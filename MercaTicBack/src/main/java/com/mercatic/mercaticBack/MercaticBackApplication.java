@@ -31,9 +31,6 @@ public class MercaticBackApplication {
         return NoOpPasswordEncoder.getInstance();
     }*/
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+
 
 }

@@ -20,8 +20,6 @@ public class AuthController {
     @Autowired
     private RegisterLoginService registerLoginService;
 
-
-
     // Registro
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
