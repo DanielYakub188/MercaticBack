@@ -48,6 +48,7 @@ public class UserMeService {
         r.setId(usuario.getId());
         r.setEmail(usuario.getCorreoElectronico());
         r.setRole(usuario.getRol());
+        r.setBalance(usuario.getBalance()); // 🔹 balance
 
         if (datos != null) {
             r.setNombre(datos.getNombre());

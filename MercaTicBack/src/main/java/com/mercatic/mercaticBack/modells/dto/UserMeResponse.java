@@ -10,6 +10,7 @@ public class UserMeResponse {
     private String segundoApellido;
     private String localidad;
     private String direccion;
+    private Double balance;
 
     public UserMeResponse() {}
 
@@ -37,4 +38,7 @@ public class UserMeResponse {
 
     public String getDireccion() { return direccion; }
     public void setDireccion(String direccion) { this.direccion = direccion; }
+
+    public Double getBalance() { return balance; }
+    public void setBalance(Double balance) { this.balance = balance; }
 }

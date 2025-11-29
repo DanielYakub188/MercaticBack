@@ -1,4 +1,5 @@
 package com.mercatic.mercaticBack.entities;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Builder;
 
@@ -13,6 +14,7 @@ public class DatosUsuario {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "usuario_id")
+    @JsonIgnore
     private Usuario usuario;
 
     @Column(name = "nombre")

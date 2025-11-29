@@ -10,6 +10,11 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "id")
+    private DatosUsuario datosUsuario;
+
     @Column(name = "correo_electronico", nullable = false, unique = true)
     private String correoElectronico;
 
@@ -19,6 +24,8 @@ public class Usuario {
     @Column(name = "rol", nullable = false)
     private String rol;
 
+    @Column(name = "balance", nullable = false)
+    private Double balance = 50.0; // todos empiezan con 50 por defecto
 
     public Usuario ()
     {
@@ -29,6 +36,15 @@ public class Usuario {
         this.correoElectronico = correoElectronico;
         this.password = password;
         this.rol = rol;
+        this.balance = 50.0; // 🔹 asegura el valor al crear
+    }
+
+    public DatosUsuario getDatosUsuario() {
+        return datosUsuario;
+    }
+
+    public void setDatosUsuario(DatosUsuario datosUsuario) {
+        this.datosUsuario = datosUsuario;
     }
 
     // getters & setters
@@ -44,5 +60,6 @@ public class Usuario {
     public String getRol() { return rol; }
     public void setRol(String rol) { this.rol = rol; }
 
-
+    public Double getBalance() { return balance; }
+    public void setBalance(Double balance) { this.balance = balance; }
 }

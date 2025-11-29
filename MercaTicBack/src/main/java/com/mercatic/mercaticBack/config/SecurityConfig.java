@@ -19,7 +19,7 @@ public class SecurityConfig {
                 .csrf().disable()
                 .cors().and()
                 .authorizeHttpRequests()
-                .anyRequest().permitAll(); // Permitir todo por ahora
+                .anyRequest().permitAll(); //Permitir
 
         return http.build();
     }
@@ -27,10 +27,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:4200")); // ✅ origen de Angular
+        configuration.setAllowedOrigins(List.of("http://localhost:4200")); // origen de Angular
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true); // ✅ permite cookies/sesión
+        configuration.setAllowCredentials(true); //permite cookies/sesión
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
