@@ -1,9 +1,6 @@
 package com.mercatic.mercaticBack.services;
 
-import com.mercatic.mercaticBack.entities.Carrito;
-import com.mercatic.mercaticBack.entities.Pedidos;
-import com.mercatic.mercaticBack.entities.Producto;
-import com.mercatic.mercaticBack.entities.Usuario;
+import com.mercatic.mercaticBack.entities.*;
 import com.mercatic.mercaticBack.repositories.CarritoRepository;
 import com.mercatic.mercaticBack.repositories.PedidosRepository;
 import jakarta.servlet.http.HttpSession;
@@ -31,11 +28,9 @@ public class PedidosService {
         Usuario cliente = (Usuario) session.getAttribute("usuario");
         if (cliente == null) return List.of();
 
-        // Obtener productos del carrito no comprados
         List<Carrito> carrito = carritoRepository.findByUsuarioAndCompradoFalse(cliente);
         if (carrito.isEmpty()) return List.of();
 
-        // Agrupar productos por vendedor
         Map<Usuario, List<Carrito>> carritoPorVendedor = carrito.stream()
                 .collect(Collectors.groupingBy(c -> c.getProducto().getUsuario()));
 
@@ -46,18 +41,24 @@ public class PedidosService {
             List<Carrito> items = entry.getValue();
 
             Pedidos pedido = new Pedidos();
-            pedido.setUsuario(cliente); // Cliente que compra
+            pedido.setUsuario(cliente);
             pedido.setEstado("EN_CURSO");
-            List<Producto> productos = items.stream().map(Carrito::getProducto).collect(Collectors.toList());
-            pedido.setProductos(productos);
+            pedido.setTotal(items.stream().mapToDouble(c -> c.getProducto().getPrecio() * c.getUnidades()).sum() + 5.0);
 
-            double total = items.stream().mapToDouble(c -> c.getProducto().getPrecio() * c.getUnidades()).sum() + 5.0;
-            pedido.setTotal(total);
+            List<PedidoProductos> pedidoProductos = new ArrayList<>();
+            for (Carrito c : items) {
+                PedidoProductos pp = new PedidoProductos();
+                pp.setPedido(pedido);
+                pp.setProducto(c.getProducto());
+                pp.setUnidades(c.getUnidades());
+                pedidoProductos.add(pp);
+            }
+            pedido.setPedidoProductos(pedidoProductos);
 
             Pedidos saved = PedidosRepository.save(pedido);
             pedidosCreados.add(saved);
 
-            // Marcar productos como comprados
+            // Marcar carrito como comprado
             items.forEach(c -> {
                 c.setComprado(true);
                 carritoRepository.save(c);
@@ -66,6 +67,7 @@ public class PedidosService {
 
         return pedidosCreados;
     }
+
     // Devuelve todos los pedidos que contienen productos del vendedor logueado
     public List<Pedidos> listarPedidosDelVendedor(HttpSession session) {
         Usuario vendedor = (Usuario) session.getAttribute("usuario");
@@ -74,10 +76,12 @@ public class PedidosService {
         List<Pedidos> todos = PedidosRepository.findAll();
 
         return todos.stream()
-                .filter(p -> p.getProductos().stream()
-                        .anyMatch(prod -> prod.getUsuario().getId().equals(vendedor.getId())))
+                .filter(p -> p.getPedidoProductos().stream()
+                        .anyMatch(pp -> pp.getProducto().getUsuario().getId().equals(vendedor.getId()))
+                )
                 .collect(Collectors.toList());
     }
+
     @Transactional
     public boolean eliminarPedido(Long idPedido, HttpSession session) {
         Usuario usuario = (Usuario) session.getAttribute("usuario");
@@ -87,38 +91,46 @@ public class PedidosService {
         if (pedido == null) return false;
 
         // Solo puede borrarlo el vendedor dueño de al menos un producto
-        boolean pertenece = pedido.getProductos().stream()
-                .anyMatch(p -> p.getUsuario().getId().equals(usuario.getId()));
+        boolean pertenece = pedido.getPedidoProductos().stream()
+                .anyMatch(pp -> pp.getProducto().getUsuario().getId().equals(usuario.getId()));
 
         if (!pertenece) return false;
 
         PedidosRepository.delete(pedido);
         return true;
     }
+
     @Transactional
     public boolean completarPedidos(Long idPedidos, HttpSession session) {
-        Usuario usuario = (Usuario) session.getAttribute("usuario");
-        if (usuario == null) return false;
+        Usuario vendedorLogueado = (Usuario) session.getAttribute("usuario");
+        if (vendedorLogueado == null) return false;
 
-        Pedidos Pedidos = PedidosRepository.findById(idPedidos).orElse(null);
-        if (Pedidos == null || !"EN_CURSO".equals(Pedidos.getEstado())) return false;
+        Pedidos pedido = PedidosRepository.findById(idPedidos).orElse(null);
+        if (pedido == null || !"EN_CURSO".equals(pedido.getEstado())) return false;
 
-        // Verificar balance suficiente
-        if (usuario.getBalance() < Pedidos.getTotal()) return false;
+        Usuario cliente = pedido.getUsuario();
+        if (cliente.getBalance() < pedido.getTotal()) return false;
 
-        // Restar balance del usuario
-        usuario.setBalance(usuario.getBalance() - Pedidos.getTotal());
+        // Restar dinero al cliente
+        cliente.setBalance(cliente.getBalance() - pedido.getTotal());
 
-        // Dar balance al vendedor de cada producto
-        Pedidos.getProductos().forEach(p -> {
+        // Dar dinero a cada vendedor y restar stock
+        for (PedidoProductos pp : pedido.getPedidoProductos()) {
+            Producto p = pp.getProducto();
             Usuario vendedor = p.getUsuario();
-            vendedor.setBalance(vendedor.getBalance() + p.getPrecio());
-        });
+            int unidades = pp.getUnidades();
+            double totalProducto = p.getPrecio() * unidades;
 
-        Pedidos.setEstado("FINALIZADO");
-        PedidosRepository.save(Pedidos);
+            vendedor.setBalance(vendedor.getBalance() + totalProducto);
+            p.setStock(p.getStock() - unidades);
+        }
+
+        pedido.setEstado("FINALIZADO");
+        PedidosRepository.save(pedido);
+
         return true;
     }
+
 
     @Transactional
     public boolean cancelarPedidos(Long idPedidos, HttpSession session) {
