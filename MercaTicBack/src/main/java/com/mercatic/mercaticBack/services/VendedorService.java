@@ -30,7 +30,7 @@ public class VendedorService {
                                   HttpSession session) throws IOException {
 
         Usuario vendedor = (Usuario) session.getAttribute("usuario");
-        System.out.println(vendedor);
+
         if (vendedor == null) {
             throw new RuntimeException("No hay un vendedor logeado en la sesión.");
         }

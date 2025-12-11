@@ -29,6 +29,15 @@ public class AuthController {
         }
         return ResponseEntity.badRequest().body(result);
     }
+    // Registro Vendedor
+    @PostMapping("/registerSeller")
+    public ResponseEntity<String> registerSeller(@RequestBody RegisterRequest request) {
+        String result = registerLoginService.registerSeller(request);
+        if (result.equals("Registro exitoso")) {
+            return ResponseEntity.ok(result);
+        }
+        return ResponseEntity.badRequest().body(result);
+    }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request, HttpSession session) {

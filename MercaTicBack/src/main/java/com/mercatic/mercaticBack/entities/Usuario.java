@@ -10,9 +10,7 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @MapsId
-    @JoinColumn(name = "id")
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL)
     private DatosUsuario datosUsuario;
 
     @Column(name = "correo_electronico", nullable = false, unique = true)

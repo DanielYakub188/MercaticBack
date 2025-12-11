@@ -24,7 +24,6 @@ public class MercaticBackApplication {
 		SpringApplication.run(MercaticBackApplication.class, args);
 	}
 
-    //aaa
     /*
     @Bean
     public PasswordEncoder passwordEncoder(){

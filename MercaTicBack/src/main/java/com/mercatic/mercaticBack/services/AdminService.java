@@ -28,13 +28,13 @@ public class AdminService {
      */
     public List<UserMeResponse> getAllUsers(int page, int size, String search, String sortBy) {
 
-        // 1. Obtener todos los usuarios y mapear a UserMeResponse
+        // Obtener todos los usuarios y mapear a UserMeResponse
         List<UserMeResponse> users = usuarioRepository.findAll()
                 .stream()
                 .map(u -> userMeService.getByUsuarioId(u.getId().longValue()))
                 .collect(Collectors.toList());
 
-        // 2. Filtrado por búsqueda
+        // Filtrado por búsqueda
         if (search != null && !search.isEmpty()) {
             String lower = search.toLowerCase();
             users = users.stream().filter(u ->
@@ -64,7 +64,7 @@ public class AdminService {
         return users.subList(start, end);
     }
 
-    // 🔹 Actualizar usuario
+    // Actualizar usuario
     public UserMeResponse updateUser(Long id, UserMeResponse userDto) {
 
         // 1. Buscar usuario
