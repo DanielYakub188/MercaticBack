@@ -1,7 +1,9 @@
 package com.mercatic.mercaticBack.controllers;
 
 import com.mercatic.mercaticBack.entities.Carrito;
+import com.mercatic.mercaticBack.entities.Pedidos;
 import com.mercatic.mercaticBack.services.CarritoService;
+import com.mercatic.mercaticBack.services.PedidosService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,11 @@ public class CarritoController {
 
     @Autowired
     private CarritoService carritoService;
+
+    @Autowired
+    private PedidosService pedidosService;
+
+
 
     @GetMapping("/listar")
     public List<Carrito> listarCarrito(HttpSession session) {
@@ -42,7 +49,13 @@ public class CarritoController {
     }
 
     @PostMapping("/comprar")
-    public boolean comprar(HttpSession session) {
-        return carritoService.marcarComprado(session);
+    public Pedidos comprarCarrito(HttpSession session) {
+        // Crear un pedido con los productos del carrito
+        Pedidos pedido = pedidosService.crearPedidos(session);
+
+        // Marcar todos los productos del carrito como comprados
+        carritoService.marcarComprado(session);
+
+        return pedido;
     }
 }

@@ -25,7 +25,13 @@ public class ClienteService {
         }
         return productos;
     }
-
+    public Double obtenerBalance(HttpSession session) {
+        Usuario usuario = (Usuario) session.getAttribute("usuario");
+        if (usuario == null) {
+            return 0.0;
+        }
+        return usuario.getBalance();
+    }
     /*
     public List<Producto> recogerMiCestaCompra(HttpSession session)
     {
