@@ -49,13 +49,9 @@ public class CarritoController {
     }
 
     @PostMapping("/comprar")
-    public Pedidos comprarCarrito(HttpSession session) {
-        // Crear un pedido con los productos del carrito
-        Pedidos pedido = pedidosService.crearPedidos(session);
-
-        // Marcar todos los productos del carrito como comprados
-        carritoService.marcarComprado(session);
-
-        return pedido;
+    public List<Pedidos> comprarCarrito(HttpSession session) {
+        // Crear pedidos separados por vendedor
+        List<Pedidos> pedidosCreados = pedidosService.crearPedidosPorVendedor(session);
+        return pedidosCreados;
     }
 }

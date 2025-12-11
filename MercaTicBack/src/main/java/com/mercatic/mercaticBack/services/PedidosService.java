@@ -11,7 +11,9 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,39 +26,75 @@ public class PedidosService {
     private CarritoRepository carritoRepository;
 
     private static final double ENVIO = 5.0;
-
     @Transactional
-    public Pedidos crearPedidos(HttpSession session) {
-        Usuario usuario = (Usuario) session.getAttribute("usuario");
-        if (usuario == null) return null;
+    public List<Pedidos> crearPedidosPorVendedor(HttpSession session) {
+        Usuario cliente = (Usuario) session.getAttribute("usuario");
+        if (cliente == null) return List.of();
 
-        // Obtener los productos del carrito
-        List<Carrito> carrito = carritoRepository.findByUsuarioAndCompradoFalse(usuario);
-        if (carrito.isEmpty()) return null;
+        // Obtener productos del carrito no comprados
+        List<Carrito> carrito = carritoRepository.findByUsuarioAndCompradoFalse(cliente);
+        if (carrito.isEmpty()) return List.of();
 
-        Pedidos Pedidos = new Pedidos();
-        Pedidos.setUsuario(usuario);
-        Pedidos.setEstado("EN_CURSO");
+        // Agrupar productos por vendedor
+        Map<Usuario, List<Carrito>> carritoPorVendedor = carrito.stream()
+                .collect(Collectors.groupingBy(c -> c.getProducto().getUsuario()));
 
-        List<Producto> productos = carrito.stream().map(Carrito::getProducto).collect(Collectors.toList());
-        Pedidos.setProductos(productos);
+        List<Pedidos> pedidosCreados = new ArrayList<>();
 
-        // Calcular total: suma precios * unidades + 5 de envío
-        double total = carrito.stream().mapToDouble(c -> c.getProducto().getPrecio() * c.getUnidades()).sum() + ENVIO;
-        Pedidos.setTotal(total);
+        for (Map.Entry<Usuario, List<Carrito>> entry : carritoPorVendedor.entrySet()) {
+            Usuario vendedor = entry.getKey();
+            List<Carrito> items = entry.getValue();
 
-        // Guardar Pedidos
-        Pedidos saved = PedidosRepository.save(Pedidos);
+            Pedidos pedido = new Pedidos();
+            pedido.setUsuario(cliente); // Cliente que compra
+            pedido.setEstado("EN_CURSO");
+            List<Producto> productos = items.stream().map(Carrito::getProducto).collect(Collectors.toList());
+            pedido.setProductos(productos);
 
-        // Marcar productos como comprados en carrito
-        carrito.forEach(c -> {
-            c.setComprado(true);
-            carritoRepository.save(c);
-        });
+            double total = items.stream().mapToDouble(c -> c.getProducto().getPrecio() * c.getUnidades()).sum() + 5.0;
+            pedido.setTotal(total);
 
-        return saved;
+            Pedidos saved = PedidosRepository.save(pedido);
+            pedidosCreados.add(saved);
+
+            // Marcar productos como comprados
+            items.forEach(c -> {
+                c.setComprado(true);
+                carritoRepository.save(c);
+            });
+        }
+
+        return pedidosCreados;
     }
+    // Devuelve todos los pedidos que contienen productos del vendedor logueado
+    public List<Pedidos> listarPedidosDelVendedor(HttpSession session) {
+        Usuario vendedor = (Usuario) session.getAttribute("usuario");
+        if (vendedor == null) return List.of();
 
+        List<Pedidos> todos = PedidosRepository.findAll();
+
+        return todos.stream()
+                .filter(p -> p.getProductos().stream()
+                        .anyMatch(prod -> prod.getUsuario().getId().equals(vendedor.getId())))
+                .collect(Collectors.toList());
+    }
+    @Transactional
+    public boolean eliminarPedido(Long idPedido, HttpSession session) {
+        Usuario usuario = (Usuario) session.getAttribute("usuario");
+        if (usuario == null) return false;
+
+        Pedidos pedido = PedidosRepository.findById(idPedido).orElse(null);
+        if (pedido == null) return false;
+
+        // Solo puede borrarlo el vendedor dueño de al menos un producto
+        boolean pertenece = pedido.getProductos().stream()
+                .anyMatch(p -> p.getUsuario().getId().equals(usuario.getId()));
+
+        if (!pertenece) return false;
+
+        PedidosRepository.delete(pedido);
+        return true;
+    }
     @Transactional
     public boolean completarPedidos(Long idPedidos, HttpSession session) {
         Usuario usuario = (Usuario) session.getAttribute("usuario");
